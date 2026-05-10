@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>本格派GMシミュレーター</title>
+    <style>
+        body { font-family: sans-serif; background: #f0f2f5; padding: 20px; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .stats { display: flex; justify-content: space-between; background: #007bff; color: white; padding: 10px; border-radius: 5px; margin-bottom: 20px; }
+        button { padding: 10px 20px; cursor: pointer; background: #28a745; color: white; border: none; border-radius: 5px; }
+        button:hover { background: #218838; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        .log { height: 150px; overflow-y: scroll; background: #eee; padding: 10px; margin-top: 20px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>⚾️ プロ野球GMシミュレーター</h1>
+    
+    <div class="stats">
+        <div id="date">日付: 2026年2月1日</div>
+        <div id="budget">予算: 50億0000万円</div>
+        <div id="record">成績: 0勝 0敗</div>
+    </div>
+
+    <button onclick="advanceDay()">📅 1日進める</button>
+    <button onclick="recruitForeigner()" style="background:#17a2b8">🌎 外国人獲得(2億)</button>
+
+    <h3>📋 選手名鑑</h3>
+    <table id="rosterTable">
+        <thead>
+            <tr><th>名前</th><th>年齢</th><th>パワー</th><th>年俸</th></tr>
+        </thead>
+        <tbody id="rosterBody"></tbody>
+    </table>
+
+    <h3>📜 運営ログ</h3>
+    <div class="log" id="logBox"></div>
+</div>
+
+<script>
+    // 初期データ
+    let date = new Date(2026, 1, 1); // 2月1日
+    let budget = 500000;
+    let wins = 0; let losses = 0;
+    let roster = [
+        {name: "佐藤", age: 24, power: 45, salary: 1000, bMonth: 4, bDay: 15},
+        {name: "鈴木", age: 29, power: 55, salary: 5000, bMonth: 8, bDay: 2},
+        {name: "田中", age: 19, power: 30, salary: 800, bMonth: 2, bDay: 5}
+    ];
+
+    function updateUI() {
+        document.getElementById('date').innerText = `日付: ${date.getFullYear()}年${date.getMonth()+1}月${date.getDate()}日`;
+        document.getElementById('budget').innerText = `予算: ${Math.floor(budget/10000)}億${budget%10000}万円`;
+        document.getElementById('record').innerText = `成績: ${wins}勝 ${losses}敗`;
+        
+        let body = "";
+        roster.forEach(p => {
+            body += `<tr><td>${p.name}</td><td>${p.age}</td><td>${p.power}</td><td>${p.salary}万</td></tr>`;
+        });
+        document.getElementById('rosterBody').innerHTML = body;
+    }
+
+    function addLog(msg) {
+        const logBox = document.getElementById('logBox');
+        logBox.innerHTML = `<div>${msg}</div>` + logBox.innerHTML;
+    }
+
+    function advanceDay() {
+        date.setDate(date.getDate() + 1);
+        
+        // 誕生日チェック
+        roster.forEach(p => {
+            if (p.bMonth === date.getMonth()+1 && p.bDay === date.getDate()) {
+                p.age += 1;
+                addLog(`🎂 ${p.name}選手が誕生日で${p.age}歳になりました！`);
+            }
+        });
+
+        // 試合シミュ
+        if (date.getMonth() >= 2 && date.getMonth() <= 8 && Math.random() < 0.2) {
+            if (Math.random() > 0.5) { wins++; addLog("⚾️ 試合に勝利しました！"); }
+            else { losses++; addLog("⚾️ 試合に敗れました。"); }
+        }
+        updateUI();
+    }
+
+    function recruitForeigner() {
+        if (budget >= 20000) {
+            budget -= 20000;
+            const newP = {name: "新外国人", age: 27, power: 85, salary: 15000, bMonth: 1, bDay: 1};
+            roster.push(newP);
+            addLog("🌎 新外国人選手を獲得しました！");
+            updateUI();
+        } else { alert("予算不足です"); }
+    }
+
+    updateUI();
+</script>
+</body>
+</html>
