@@ -2,38 +2,39 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>本格派GMシミュレーター - ビジュアライズ版</title>
+    <title>本格派GMシミュレーター - 順位報酬システム版</title>
     <style>
         body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #e9ecef; color: #333; margin: 0; padding: 20px; }
-        .container { max-width: 1100px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .container { max-width: 1200px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         h1 { text-align: center; color: #1a3a5a; border-bottom: 2px solid #1a3a5a; padding-bottom: 10px; margin-bottom: 20px; }
         
-        /* 進行状態バーのスタイル */
         .progress-container { background: #dee2e6; border-radius: 10px; height: 25px; margin-bottom: 20px; position: relative; overflow: hidden; border: 1px solid #ccc; }
-        .progress-bar { background: linear-gradient(90deg, #007bff, #00d4ff); height: 100%; width: 0%; transition: width 0.3s; }
+        .progress-bar { background: linear-gradient(90deg, #28a745, #00d4ff); height: 100%; width: 0%; transition: width 0.5s ease-in-out; }
         .progress-text { position: absolute; width: 100%; text-align: center; top: 0; font-size: 0.85em; line-height: 25px; font-weight: bold; color: #1a3a5a; }
 
-        .stats { display: flex; justify-content: space-around; background: #1a3a5a; color: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; font-weight: bold; }
-        .budget-info { text-align: center; font-size: 0.9em; margin-bottom: 20px; color: #666; }
+        .stats { display: flex; justify-content: space-around; background: #1a3a5a; color: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; font-weight: bold; align-items: center; }
+        .rank-badge { background: #ffc107; color: #1a3a5a; padding: 4px 12px; border-radius: 20px; font-size: 1.1em; }
         
         .control-panel { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ddd; text-align: center; }
-        .btn-group { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 10px; }
-        button { padding: 10px 20px; cursor: pointer; border: none; border-radius: 6px; font-weight: bold; transition: 0.2s; }
+        .btn-group { display: flex; gap: 10px; justify-content: center; }
+        button { padding: 10px 24px; cursor: pointer; border: none; border-radius: 6px; font-weight: bold; }
         .btn-day { background: #007bff; color: white; }
         .btn-auto { background: #dc3545; color: white; }
         .btn-stop { background: #6c757d; color: white; }
-        button:hover { opacity: 0.8; transform: translateY(-1px); }
 
         .tabs { display: flex; border-bottom: 2px solid #ddd; margin-bottom: 15px; }
-        .tab { padding: 10px 20px; cursor: pointer; background: #eee; border-radius: 5px 5px 0 0; margin-right: 5px; }
+        .tab { padding: 10px 20px; cursor: pointer; background: #eee; border-radius: 5px 5px 0 0; margin-right: 5px; font-size: 0.9em; }
         .tab.active { background: #1a3a5a; color: white; }
+
         .table-container { height: 400px; overflow-y: auto; border: 1px solid #ddd; }
-        table { width: 100%; border-collapse: collapse; background: white; font-size: 0.85em; }
-        th, td { border: 1px solid #dee2e6; padding: 8px; text-align: center; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.8em; }
+        th, td { border: 1px solid #dee2e6; padding: 6px; text-align: center; }
         th { background: #f8f9fa; position: sticky; top: 0; z-index: 10; }
         
-        .log { height: 180px; overflow-y: scroll; background: #222; color: #00ff00; padding: 15px; margin-top: 20px; font-family: monospace; border-radius: 5px; }
-        .salary-red { color: #dc3545; font-weight: bold; }
+        .modal { display: none; position: fixed; z-index: 200; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); }
+        .modal-content { background-color: #fff; margin: 2% auto; padding: 25px; border-radius: 15px; width: 90%; max-width: 1000px; text-align: center; }
+
+        .log { height: 120px; overflow-y: scroll; background: #222; color: #00ff00; padding: 15px; margin-top: 20px; font-family: monospace; border-radius: 5px; font-size: 0.85em; }
     </style>
 </head>
 <body>
@@ -43,193 +44,213 @@
 
     <div class="progress-container">
         <div class="progress-bar" id="progressBar"></div>
-        <div class="progress-text" id="progressText">シーズン進捗: 2月 (キャンプ)</div>
+        <div class="progress-text" id="progressText">シーズン進捗</div>
     </div>
     
     <div class="stats">
         <div id="date">📅 2026年2月1日</div>
-        <div id="budget">💰 50億0000万円</div>
-        <div id="record">📊 0勝 0敗</div>
+        <div id="record">📊 0勝 0敗 0分</div>
+        <div id="rank" class="rank-badge">- 位</div>
+        <div id="budget" style="color: #00ff00;">💰 50億0000万円</div>
     </div>
-    <div class="budget-info" id="totalSalaryDisplay">チーム総年俸: 0万円</div>
 
     <div class="control-panel">
         <div class="btn-group">
             <button class="btn-day" onclick="advanceDays(1)">1日進める</button>
-            <button class="btn-day" style="background:#6610f2" onclick="advanceDays(7)">1週間</button>
             <button class="btn-auto" id="btnAuto" onclick="startAuto()">オート進行開始</button>
             <button class="btn-stop" id="btnStop" onclick="stopAuto()" style="display:none;">オート停止</button>
-            <button class="btn-day" style="background:#fd7e14" onclick="recruitForeigner()">外国人獲得(2億)</button>
         </div>
-        <div id="autoStatus" style="font-size: 0.9em; color: #dc3545; margin-top: 5px; font-weight: bold;"></div>
     </div>
 
     <div class="tabs">
-        <div id="tab1" class="tab active" onclick="switchTab(1)">1軍 (主力)</div>
-        <div id="tab2" class="tab" onclick="switchTab(2)">2軍 (若手)</div>
+        <div id="tab1" class="tab active" onclick="switchTab(1)">1軍 投手</div>
+        <div id="tab2" class="tab" onclick="switchTab(2)">1軍 野手</div>
+        <div id="tab3" class="tab" onclick="switchTab(3)">2軍 育成</div>
     </div>
 
     <div class="table-container">
         <table>
-            <thead>
-                <tr>
-                    <th>名前</th><th>年齢</th><th>ミート</th><th>パワー</th><th>推定年俸</th><th>状態</th><th>入替</th>
-                </tr>
-            </thead>
+            <thead id="tableHead"></thead>
             <tbody id="rosterBody"></tbody>
         </table>
     </div>
 
-    <div class="log" id="logBox">>> 進行状態バーを実装しました。</div>
+    <div id="negotiationModal" class="modal">
+        <div class="modal-content">
+            <h2 id="negoTitle">🤝 契約更改</h2>
+            <div id="negoSummary" style="font-size:1.2em; font-weight:bold; margin-bottom:15px; color:#1a3a5a;"></div>
+            <table style="width:100%;">
+                <thead><tr><th>名前</th><th>成績</th><th>今季年俸</th><th>来季年俸</th></tr></thead>
+                <tbody id="negoBody"></tbody>
+            </table>
+            <button class="btn-day" style="background:#28a745; margin-top:20px;" onclick="finishNegotiation()">来季のキャンプへ</button>
+        </div>
+    </div>
+
+    <div id="draftModal" class="modal">
+        <div class="modal-content">
+            <h2>🏆 ドラフト会議 (3名選択)</h2>
+            <div class="btn-group" id="draftCandidates" style="margin-top:20px; display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px;"></div>
+        </div>
+    </div>
+
+    <div class="log" id="logBox">>> 毎月30日に、順位に応じた予算が支給されます。</div>
 </div>
 
 <script>
-    let date = new Date(2026, 1, 1);
-    let budget = 500000;
-    let wins = 0; let losses = 0;
-    let currentView = 1;
+    let currentYear = 2026;
+    let date = new Date(currentYear, 1, 1);
+    let budget = 500000; // 単位：万円
+    let wins = 0; let losses = 0; let draws = 0;
+    let currentTab = 1;
     let roster = [];
     let autoTimer = null;
 
-    // 選手名データ
     const lastNames = ["佐藤", "鈴木", "高橋", "田中", "伊藤", "渡辺", "山本", "中村", "小林", "加藤", "吉田", "山田", "佐々木", "山口", "松本", "井上", "木村", "林", "清水", "斎藤", "山崎", "阿部", "森", "池田", "橋本", "石川", "山下", "小川", "岡田", "長谷川"];
     const firstNames = ["翔", "蓮", "湊", "悠真", "陽翔", "結斗", "大和", "颯太", "陽葵", "健太", "拓海", "和也", "哲也", "雄大", "翼", "慎太郎", "剛", "大輝", "誠", "直樹", "亮", "俊介", "裕太", "竜也", "隼人", "慶太", "貴大", "達也", "康平", "涼"];
 
-    function generateRandomName() {
-        return lastNames[Math.floor(Math.random() * lastNames.length)] + " " + firstNames[Math.floor(Math.random() * firstNames.length)];
+    function createPlayer(pos, isDraft) {
+        let age = isDraft ? Math.floor(Math.random()*5)+18 : Math.floor(Math.random()*15)+18;
+        let s1 = (pos==='投手') ? Math.floor(Math.random()*20)+140 : Math.floor(Math.random()*60)+20;
+        let s2 = (pos==='投手') ? Math.floor(Math.random()*60)+20 : Math.floor(Math.random()*60)+20;
+        return {
+            id: Math.random(), name: lastNames[Math.floor(Math.random()*lastNames.length)]+" "+firstNames[Math.floor(Math.random()*firstNames.length)],
+            pos: pos, age: age, s1: s1, s2: s2, salary: 1000, status: isDraft?2:1,
+            games:0, win:0, lose:0, draw:0, era_run:0, era_ip:0, avg_ab:0, avg_h:0, hr:0, rbi:0
+        };
     }
 
-    for(let i=0; i<60; i++) {
-        let age = Math.floor(Math.random() * 20) + 18;
-        let meet = Math.floor(Math.random() * 50) + 20;
-        let power = Math.floor(Math.random() * 50) + 20;
-        let baseSalary = (meet + power) * (age > 30 ? 15 : 8);
-        if (age < 22) baseSalary = 800 + Math.floor(Math.random() * 400);
-        if (meet + power > 160) baseSalary += 20000;
-        
-        roster.push({
-            id: i, name: generateRandomName(), age: age,
-            bMonth: Math.floor(Math.random() * 12) + 1, bDay: Math.floor(Math.random() * 28) + 1,
-            meet: meet, power: power, salary: Math.floor(baseSalary / 10) * 10, status: i < 30 ? 1 : 2
-        });
+    for(let i=0; i<60; i++) roster.push(createPlayer(i<25?'投手':'野手', false));
+
+    function getRankNumber() {
+        if (wins + losses === 0) return 4; // 開幕前は暫定4位扱い
+        let winRate = wins / (wins + losses);
+        if (winRate >= 0.600) return 1;
+        if (winRate >= 0.540) return 2;
+        if (winRate >= 0.500) return 3;
+        if (winRate >= 0.460) return 4;
+        if (winRate >= 0.420) return 5;
+        return 6;
     }
 
     function advanceDays(days) {
         for(let i=0; i<days; i++) {
             date.setDate(date.getDate() + 1);
+
+            // 毎月30日に順位報酬を追加
+            if (date.getDate() === 30) {
+                let rank = getRankNumber();
+                // 1位: 1.5億, 2位: 1.2億, 3位: 1.0億, 4位: 8000万, 5位: 6000万, 6位: 4000万
+                let rewards = [0, 15000, 12000, 10000, 8000, 6000, 4000];
+                let monthlyIncome = rewards[rank];
+                budget += monthlyIncome;
+                addLog(`【経理】30日：${rank}位報酬として ${monthlyIncome}万円 が支給されました。`);
+            }
+
+            // 毎月1日に選手年俸の支払い（1/12ずつ）
             if (date.getDate() === 1) {
                 let monthlyCost = Math.floor(getTotalSalary() / 12);
                 budget -= monthlyCost;
-                addLog(`💰 1日の運営費として ${monthlyCost}万円 を支払いました。`);
+                addLog(`【経理】1日：選手年俸 ${monthlyCost}万円 を支払いました。`);
             }
-            checkEvents();
+
+            if (date.getMonth() === 9 && date.getDate() === 20) { stopAuto(); openDraft(); return; }
+            if (date.getMonth() === 11 && date.getDate() === 1) { stopAuto(); openNegotiation(); return; }
+            if (date.getMonth() >= 2 && date.getMonth() <= 9 && Math.random() < 0.25) simulateGame();
         }
         updateUI();
         updateProgressBar();
     }
 
-    // 進行バーの更新
-    function updateProgressBar() {
-        // 2月1日を0%、12月31日を100%として計算
-        const start = new Date(2026, 1, 1).getTime();
-        const end = new Date(2026, 11, 31).getTime();
-        const current = date.getTime();
-        const percent = ((current - start) / (end - start)) * 100;
+    function simulateGame() {
+        let roll = Math.random();
+        let result = "";
+        let pList = roster.filter(p => p.pos === '投手' && p.status === 1);
+        let p = pList[Math.floor(Math.random()*pList.length)];
         
-        const bar = document.getElementById('progressBar');
-        bar.style.width = Math.min(100, Math.max(0, percent)) + "%";
+        if (roll < 0.08) { draws++; result = "△"; if(p){p.games++; p.draw++; p.era_ip+=12; p.era_run+=Math.floor(Math.random()*3);} }
+        else if (roll < 0.54) { wins++; result = "○"; if(p){p.games++; p.win++; p.era_ip+=9; p.era_run+=Math.max(0,Math.floor(Math.random()*5)-(p.s2/25));} }
+        else { losses++; result = "●"; if(p){p.games++; p.lose++; p.era_ip+=9; p.era_run+=Math.floor(Math.random()*6);} }
 
-        const monthNames = ["", "1月", "2月(キャンプ)", "3月(開幕)", "4月", "5月", "6月", "7月", "8月", "9月", "10月(終盤/ドラフト)", "11月", "12月(更改)"];
-        document.getElementById('progressText').innerText = `シーズン進捗: ${monthNames[date.getMonth()+1]}`;
-    }
-
-    function getTotalSalary() { return roster.reduce((sum, p) => sum + p.salary, 0); }
-
-    function checkEvents() {
-        roster.forEach(p => {
-            if (p.bMonth === date.getMonth()+1 && p.bDay === date.getDate()) {
-                p.age += 1;
-                addLog(`🎂 ${p.name}(${p.age}歳) 誕生日おめでとう！`);
-            }
+        roster.filter(p => p.pos === '野手' && p.status === 1).forEach(b => {
+            b.games++; let ab = (result==="△")?5:4; b.avg_ab += ab;
+            let h = 0; for(let j=0; j<ab; j++) if(Math.random() < (b.s1/260)+0.2) h++;
+            b.avg_h += h; if(Math.random() < (b.s2/400)) { b.hr++; b.rbi += 1; }
         });
-        if (date.getMonth() >= 2 && date.getMonth() <= 9 && Math.random() < 0.2) {
-            if (Math.random() > 0.5) { wins++; addLog(`⚾️ ${date.getMonth()+1}/${date.getDate()}: 勝利！`); }
-            else { losses++; addLog(`⚾️ ${date.getMonth()+1}/${date.getDate()}: 敗戦。`); }
-        }
-    }
-
-    function startAuto() {
-        if(autoTimer) return;
-        document.getElementById('btnAuto').style.display = 'none';
-        document.getElementById('btnStop').style.display = 'inline-block';
-        document.getElementById('autoStatus').innerText = "オート進行中...";
-        autoTimer = setInterval(() => { advanceDays(1); }, 500);
-    }
-
-    function stopAuto() {
-        clearInterval(autoTimer);
-        autoTimer = null;
-        document.getElementById('btnAuto').style.display = 'inline-block';
-        document.getElementById('btnStop').style.display = 'none';
-        document.getElementById('autoStatus').innerText = "";
     }
 
     function updateUI() {
         document.getElementById('date').innerText = `📅 ${date.getFullYear()}年${date.getMonth()+1}月${date.getDate()}日`;
-        document.getElementById('budget').innerText = `💰 予算: ${Math.floor(budget/10000)}億${budget%10000}万円`;
-        document.getElementById('record').innerText = `📊 成績: ${wins}勝 ${losses}敗`;
-        document.getElementById('totalSalaryDisplay').innerText = `チーム総年俸: ${getTotalSalary().toLocaleString()}万円`;
+        document.getElementById('budget').innerText = `💰 ${Math.floor(budget/10000)}億${(budget%10000).toString().padStart(4,'0')}万円`;
+        let wr = (wins / (wins + losses || 1)).toFixed(3);
+        document.getElementById('record').innerText = `📊 ${wins}勝 ${losses}敗 ${draws}分 (${wr})`;
         
+        let rank = getRankNumber();
+        const rankEl = document.getElementById('rank');
+        rankEl.innerText = `${rank} 位`;
+        rankEl.style.background = rank === 1 ? "#ffd700" : (rank <= 3 ? "#c0c0c0" : "#ffc107");
+
+        let head = currentTab === 1 ? `<tr><th>名前</th><th>球速</th><th>勝-敗-分</th><th>防御率</th><th>年俸</th><th>入替</th></tr>` :
+                   currentTab === 2 ? `<tr><th>名前</th><th>ミート</th><th>打率</th><th>本塁打</th><th>打点</th><th>年俸</th><th>入替</th></tr>` :
+                                      `<tr><th>名前</th><th>年齢</th><th>Pos</th><th>能力</th><th>年俸</th><th>入替</th></tr>`;
+        document.getElementById('tableHead').innerHTML = head;
+
         let body = "";
-        let filtered = roster.filter(p => p.status === currentView);
-        filtered.sort((a, b) => b.salary - a.salary);
-        
+        let filtered = roster.filter(p => (currentTab===1 && p.pos==='投手' && p.status===1) || (currentTab===2 && p.pos==='野手' && p.status===1) || (currentTab===3 && p.status===2));
         filtered.forEach(p => {
-            let salaryClass = p.salary > 20000 ? 'class="salary-red"' : '';
-            body += `<tr>
-                <td>${p.name}</td><td>${p.age}</td><td>${p.meet}</td><td>${p.power}</td>
-                <td ${salaryClass}>${p.salary.toLocaleString()}万</td><td>${p.status}軍</td>
-                <td><button onclick="toggleStatus(${p.id})" style="padding:2px 8px; font-size:10px; background:#6c757d; color:white;">入替</button></td>
-            </tr>`;
+            let stats = currentTab===1 ? `<td>${p.s1}km</td><td>${p.win}-${p.lose}-${p.draw}</td><td>${(p.era_run*9/(p.era_ip||1)).toFixed(2)}</td>` :
+                        currentTab===2 ? `<td>${p.s1}</td><td>${(p.avg_h/(p.avg_ab||1)).toFixed(3)}</td><td>${p.hr}</td><td>${p.rbi}</td>` :
+                                         `<td>${p.age}</td><td>${p.pos}</td><td>${p.s1}/${p.s2}</td>`;
+            body += `<tr><td>${p.name}</td>${stats}<td>${p.salary}万</td><td><button onclick="toggleStatus(${p.id})">入替</button></td></tr>`;
         });
         document.getElementById('rosterBody').innerHTML = body;
     }
 
-    function toggleStatus(id) {
-        let p = roster.find(x => x.id === id);
-        p.status = p.status === 1 ? 2 : 1;
-        updateUI();
+    function openNegotiation() {
+        const negoBody = document.getElementById('negoBody'); negoBody.innerHTML = "";
+        let rank = getRankNumber();
+        document.getElementById('negoSummary').innerText = `【最終順位: ${rank}位】 年間成績: ${wins}勝 ${losses}敗 ${draws}分`;
+        roster.forEach(p => {
+            let nextS = Math.floor(p.salary * (rank <= 3 ? 1.15 : 0.85) / 10) * 10;
+            if(nextS < 800) nextS = 800;
+            let summ = p.pos==='投手' ? `${p.win}勝` : `${(p.avg_h/p.avg_ab||0).toFixed(3)} ${p.hr}本`;
+            negoBody.innerHTML += `<tr><td>${p.name}</td><td>${summ}</td><td>${p.salary}万</td><td>${nextS}万</td></tr>`;
+            p.nextS = nextS;
+        });
+        document.getElementById('negotiationModal').style.display = 'block';
     }
 
-    function switchTab(t) {
-        currentView = t;
-        document.getElementById('tab1').className = t === 1 ? "tab active" : "tab";
-        document.getElementById('tab2').className = t === 2 ? "tab active" : "tab";
-        updateUI();
+    function finishNegotiation() {
+        roster.forEach(p => { p.salary=p.nextS; p.age++; p.games=0; p.win=0; p.lose=0; p.draw=0; p.era_run=0; p.era_ip=0; p.avg_ab=0; p.avg_h=0; p.hr=0; p.rbi=0; });
+        document.getElementById('negotiationModal').style.display = 'none';
+        currentYear++; date = new Date(currentYear, 1, 1); wins=0; losses=0; draws=0; updateUI(); updateProgressBar();
     }
 
-    function addLog(msg) {
-        const logBox = document.getElementById('logBox');
-        const div = document.createElement('div');
-        div.innerText = "> " + msg;
-        logBox.insertBefore(div, logBox.firstChild);
-        if(logBox.childNodes.length > 50) logBox.removeChild(logBox.lastChild);
+    function openDraft() {
+        let picks = 3;
+        const div = document.getElementById('draftCandidates'); div.innerHTML = "";
+        for(let i=0; i<6; i++) {
+            let p = createPlayer(Math.random()>0.5?'投手':'野手', true);
+            let btn = document.createElement('button'); btn.className="btn-day";
+            btn.innerHTML = `<small>${p.pos}</small><br>${p.name}<br><b>${p.pos==='投手'?p.s1+'km':'パ:'+p.s2}</b>`;
+            btn.onclick = () => { roster.push(p); btn.disabled=true; btn.style.opacity=0.4; picks--; if(picks===0) setTimeout(()=>{document.getElementById('draftModal').style.display='none'; updateUI();}, 400); };
+            div.appendChild(btn);
+        }
+        document.getElementById('draftModal').style.display = 'block';
     }
 
-    function recruitForeigner() {
-        if (budget >= 20000) {
-            budget -= 20000;
-            const fLast = ["ジョンソン", "スミス", "ロドリゲス", "ガルシア", "ウィリアムズ", "ブラウン"];
-            const fFirst = ["マイク", "アレックス", "デビッド", "クリス", "ジョー"];
-            const newP = {
-                id: roster.length, 
-                name: fLast[Math.floor(Math.random()*fLast.length)] + " " + fFirst[Math.floor(Math.random()*fFirst.length)],
-                age: 28, bMonth: 1, bDay: 1, meet: 25, power: 92, salary: 45000, status: 1
-            };
-            roster.push(newP);
-            addLog(`🌎 外国人 ${newP.name} を獲得しました！`);
-            updateUI();
-        } else { alert("予算不足です"); }
+    function toggleStatus(id) { let p=roster.find(x=>x.id===id); p.status=p.status===1?2:1; updateUI(); }
+    function switchTab(t) { currentTab=t; updateUI(); }
+    function getTotalSalary() { return roster.reduce((sum, p) => sum + p.salary, 0); }
+    function startAuto() { if(!autoTimer) { document.getElementById('btnAuto').style.display='none'; document.getElementById('btnStop').style.display='inline-block'; autoTimer=setInterval(()=>advanceDays(1), 150); } }
+    function stopAuto() { clearInterval(autoTimer); autoTimer=null; document.getElementById('btnAuto').style.display='inline-block'; document.getElementById('btnStop').style.display='none'; }
+    function addLog(msg) { const logBox = document.getElementById('logBox'); logBox.innerHTML = `<div>> ${msg}</div>` + logBox.innerHTML; }
+    function updateProgressBar() {
+        const start = new Date(date.getFullYear(), 1, 1).getTime();
+        const end = new Date(date.getFullYear(), 11, 1).getTime();
+        let pct = ((date.getTime() - start) / (end - start)) * 100;
+        document.getElementById('progressBar').style.width = Math.min(100, Math.max(0, pct)) + "%";
+        document.getElementById('progressText').innerText = `シーズン進捗: ${date.getMonth()+1}月`;
     }
 
     updateUI();
