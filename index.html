@@ -2,168 +2,188 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>プロ野球GMマネージャー - 143試合・パワプロ風能力版</title>
+    <title>プロ野球GMマネージャー - 初期設定機能付き</title>
     <style>
         :root {
             --primary: #1a2a6c;
             --secondary: #b21f1f;
             --accent: #fdbb2d;
-            --success: #00f260;
             --bg: #f0f2f5;
             --card-bg: #ffffff;
             --text-dark: #2c3e50;
         }
 
-        body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif; background: var(--bg); color: var(--text-dark); margin: 0; padding: 20px; overflow-x: hidden; }
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; background: var(--bg); color: var(--text-dark); margin: 0; padding: 20px; }
         
-        /* スタート画面 */
-        #startScreen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(135deg, #1a2a6c, #b21f1f);
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            z-index: 9999; transition: opacity 0.8s ease, visibility 0.8s; color: white; text-align: center;
-        }
-        #startScreen.hidden { opacity: 0; visibility: hidden; }
+        /* 画面共通レイヤー */
+        .screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; transition: 0.5s; }
+        .hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+
+        /* タイトル画面 */
+        #startScreen { background: linear-gradient(135deg, #1a2a6c, #b21f1f); color: white; }
         .logo-main { font-size: 4rem; font-weight: 900; text-shadow: 4px 4px 0px rgba(0,0,0,0.3); margin-bottom: 20px; }
-        .start-btn { padding: 15px 60px; font-size: 1.5rem; font-weight: bold; color: var(--primary); background: var(--accent); border: none; border-radius: 50px; cursor: pointer; transition: all 0.3s ease; animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(253, 187, 45, 0.7); } 70% { box-shadow: 0 0 0 20px rgba(253, 187, 45, 0); } 100% { box-shadow: 0 0 0 0 rgba(253, 187, 45, 0); } }
 
-        /* UIパーツ */
-        .container { max-width: 1150px; margin: auto; }
-        h1 { text-align: center; color: var(--primary); font-weight: 900; }
-        .stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 25px; }
-        .stat-item { background: var(--primary); color: white; padding: 12px; border-radius: 12px; text-align: center; }
-        .stat-value { font-size: 1.2em; font-weight: 800; display: block; margin-top: 5px; }
-        .stat-label { font-size: 0.7em; opacity: 0.8; font-weight: bold; }
+        /* 設定画面 */
+        #setupScreen { background: white; color: var(--text-dark); }
+        .setup-box { background: #f8f9fa; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 400px; text-align: center; }
+        .setup-box h2 { color: var(--primary); margin-bottom: 30px; }
+        .form-group { margin-bottom: 20px; text-align: left; }
+        .form-group label { display: block; font-weight: bold; margin-bottom: 8px; font-size: 0.9em; }
+        .form-group input, .form-group select { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
 
-        /* 能力ランクの色 */
-        .rank-S { color: #ff00ff; font-weight: bold; }
-        .rank-A { color: #ff4500; font-weight: bold; }
-        .rank-B { color: #ffa500; font-weight: bold; }
-        .rank-C { color: #ffd700; font-weight: bold; }
-        .rank-D { color: #32cd32; font-weight: bold; }
-        .rank-E { color: #1e90ff; font-weight: bold; }
-        .rank-F { color: #808080; font-weight: bold; }
+        /* ボタン */
+        .btn-main { padding: 15px 60px; font-size: 1.2rem; font-weight: bold; cursor: pointer; border: none; border-radius: 50px; transition: 0.3s; }
+        .btn-start { background: var(--accent); color: var(--primary); }
+        .btn-setup { background: var(--primary); color: white; margin-top: 20px; width: 100%; }
+
+        /* メインUI */
+        .container { max-width: 1000px; margin: auto; }
+        .stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px; }
+        .stat-item { background: var(--primary); color: white; padding: 10px; border-radius: 10px; text-align: center; }
+        .stat-value { font-size: 1.1em; font-weight: bold; display: block; }
+
+        .player-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+        .player-card { background: #fff; border: 1px solid #ddd; padding: 12px; border-radius: 8px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .player-card:hover { background: #eef2ff; border-color: var(--primary); }
+
+        /* 詳細モーダル */
+        .modal { display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); }
+        .modal-content { background: white; margin: 10% auto; padding: 25px; border-radius: 20px; width: 90%; max-width: 450px; position: relative; }
         
-        .main-card { background: var(--card-bg); border-radius: 15px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
-        .tabs { display: flex; border-bottom: 2px solid #eee; margin-bottom: 20px; gap: 10px; }
-        .tab { padding: 12px 25px; cursor: pointer; font-weight: bold; color: #777; }
-        .tab.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
-        
-        .table-container { height: 450px; overflow-y: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 800px; }
-        th { background: #f8f9fa; padding: 10px; font-size: 0.8em; position: sticky; top: 0; z-index: 10; }
-        td { padding: 10px; border-bottom: 1px solid #eee; text-align: center; font-size: 0.85em; }
-
-        .log-container { margin-top: 20px; background: #1e1e2e; border-radius: 12px; padding: 15px; height: 120px; overflow-y: auto; color: #d1d1e0; font-family: monospace; }
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); }
-        .modal-content { background: white; margin: 5% auto; padding: 30px; border-radius: 20px; width: 85%; max-width: 800px; }
+        .rank-S { color: #ff00ff; } .rank-A { color: #ff4500; } .rank-B { color: #ffa500; }
+        .rank-C { color: #ffd700; } .rank-D { color: #32cd32; } .rank-E { color: #1e90ff; }
     </style>
 </head>
 <body>
 
-<div id="startScreen">
+<div id="startScreen" class="screen">
     <div class="logo-main">ELITE GM</div>
-    <button class="start-btn" onclick="startGame()">GAME START</button>
+    <button class="btn-main btn-start" onclick="showSetup()">PRESS START</button>
+</div>
+
+<div id="setupScreen" class="screen hidden">
+    <div class="setup-box">
+        <h2>チーム設定</h2>
+        <div class="form-group">
+            <label>チーム名</label>
+            <input type="text" id="inputTeamName" placeholder="例：東京レジェンズ">
+        </div>
+        <div class="form-group">
+            <label>本拠地都市</label>
+            <input type="text" id="inputCity" placeholder="例：東京">
+        </div>
+        <div class="form-group">
+            <label>難易度</label>
+            <select id="inputDifficulty">
+                <option value="easy">イージー (予算多め)</option>
+                <option value="normal" selected>ノーマル</option>
+                <option value="hard">ハード (予算カツカツ)</option>
+            </select>
+        </div>
+        <button class="btn-main btn-setup" onclick="startGame()">この内容でGM就任</button>
+    </div>
 </div>
 
 <div class="container">
-    <h1>⚾ プロ野球GMマネージャー</h1>
+    <h2 id="displayTeamName" style="text-align: center; color: var(--primary); margin-bottom: 5px;">⚾ チーム未設定</h2>
+    <p id="displayCity" style="text-align: center; color: #666; margin-top: 0; font-size: 0.9em;">-</p>
     
     <div class="stats-grid">
         <div class="stat-item"><span class="stat-label">日付</span><span class="stat-value" id="date">2月1日</span></div>
-        <div class="stat-item"><span class="stat-label">予算</span><span class="stat-value" id="budget">50.00億円</span></div>
+        <div class="stat-item"><span class="stat-label">予算</span><span class="stat-value" id="budget">0億円</span></div>
         <div class="stat-item"><span class="stat-label">試合数</span><span class="stat-value" id="gameCount">0 / 143</span></div>
-        <div class="stat-item"><span class="stat-label">勝率 (勝-敗-分)</span><span class="stat-value" id="record">.000 (0-0-0)</span></div>
-        <div class="stat-item" style="background: var(--accent);"><span class="stat-label" style="color: var(--primary);">順位</span><span class="stat-value" id="rank" style="color: var(--primary);">- 位</span></div>
+        <div class="stat-item"><span class="stat-label">勝率 (勝-敗)</span><span class="stat-value" id="record">.000 (0-0)</span></div>
+        <div class="stat-item" style="background: var(--accent); color: var(--primary);"><span class="stat-label">順位</span><span class="stat-value" id="rank">- 位</span></div>
     </div>
 
     <div style="text-align: center; margin-bottom: 20px;">
-        <button class="btn-day" onclick="advanceDays(1)" style="background:var(--primary); color:white;">1日進める</button>
-        <button id="btnAuto" onclick="startAuto()" style="background:var(--secondary); color:white;">オート進行</button>
-        <button id="btnStop" onclick="stopAuto()" style="display:none; background:#555; color:white;">停止</button>
+        <button onclick="advanceDays(1)" style="padding: 10px 20px; cursor:pointer;">1日進める</button>
+        <button id="btnAuto" onclick="startAuto()" style="background:var(--secondary); color:white; padding: 10px 20px; cursor:pointer;">オート進行</button>
+        <button id="btnStop" onclick="stopAuto()" style="display:none; padding: 10px 20px; cursor:pointer;">停止</button>
     </div>
 
-    <div class="main-card">
-        <div class="tabs">
-            <div id="tab1" class="tab active" onclick="switchTab(1)">1軍 投手</div>
-            <div id="tab2" class="tab" onclick="switchTab(2)">1軍 野手</div>
-            <div id="tab3" class="tab" onclick="switchTab(3)">2軍 育成</div>
+    <div class="main-card" style="background: white; padding: 20px; border-radius: 15px;">
+        <div style="display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid #eee;">
+            <div id="tab1" class="tab active" onclick="switchTab(1)" style="padding: 10px; cursor:pointer; font-weight:bold;">1軍 投手</div>
+            <div id="tab2" class="tab" onclick="switchTab(2)" style="padding: 10px; cursor:pointer; font-weight:bold;">1軍 野手</div>
+            <div id="tab3" class="tab" onclick="switchTab(3)" style="padding: 10px; cursor:pointer; font-weight:bold;">2軍</div>
         </div>
-        <div class="table-container">
-            <table>
-                <thead id="tableHead"></thead>
-                <tbody id="rosterBody"></tbody>
-            </table>
-        </div>
+        <div class="player-grid" id="playerList"></div>
     </div>
-
-    <div class="log-container" id="logBox"></div>
 </div>
 
-<div id="draftModal" class="modal">
+<div id="detailModal" class="modal">
     <div class="modal-content">
-        <h2>🏆 ドラフト会議</h2>
-        <p>指名候補を選択してください（残り <span id="draftLeftCount">3</span> 名）</p>
-        <div id="draftCandidates" style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-top:20px;"></div>
+        <span onclick="closeDetail()" style="position:absolute; right:20px; top:15px; cursor:pointer; font-size:24px;">&times;</span>
+        <div id="modalContent"></div>
     </div>
 </div>
 
 <script>
-    // ランク変換
-    function getRankChar(val) {
-        if (val >= 90) return 'S'; if (val >= 80) return 'A'; if (val >= 70) return 'B';
-        if (val >= 60) return 'C'; if (val >= 50) return 'D'; if (val >= 35) return 'E';
-        if (val >= 15) return 'F'; return 'G';
-    }
-    function getRankSpan(val) {
-        let r = getRankChar(val);
-        return `<span class="rank-${r}">${r}(${val})</span>`;
-    }
-    function formatStat(val) {
-        let s = val.toFixed(3); return s.startsWith("0") ? s.substring(1) : s;
+    // グローバル変数
+    let teamName = "チーム名";
+    let cityName = "本拠地";
+    let budget = 500000;
+    let wins = 0, losses = 0, totalGames = 0;
+    let date = new Date(2026, 1, 1);
+    let roster = [];
+    let currentTab = 1;
+    let autoTimer = null;
+
+    // 設定画面へ移動
+    function showSetup() {
+        document.getElementById('startScreen').classList.add('hidden');
+        document.getElementById('setupScreen').classList.remove('hidden');
     }
 
-    let currentYear = 2026, budget = 500000, wins = 0, losses = 0, draws = 0, totalGames = 0;
-    let date = new Date(currentYear, 1, 1), roster = [], autoTimer = null, currentTab = 1;
-    const MAX_GAMES = 143;
+    // ゲーム開始（設定反映）
+    function startGame() {
+        const inputName = document.getElementById('inputTeamName').value;
+        const inputCity = document.getElementById('inputCity').value;
+        const diff = document.getElementById('inputDifficulty').value;
 
-    const lastNames = ["佐藤", "鈴木", "高橋", "田中", "伊藤", "渡辺", "山本", "中村", "小林", "加藤", "吉田", "山田"];
-    const firstNames = ["翔", "蓮", "悠真", "陽翔", "結斗", "大和", "颯太", "健太", "拓海", "和也"];
+        teamName = inputName || "無名フェニックス";
+        cityName = inputCity || "地方都市";
+        
+        // 難易度で予算変更
+        if(diff === 'easy') budget = 1000000; 
+        else if(diff === 'hard') budget = 300000;
+        else budget = 500000;
 
-    function createPlayer(pos, isDraft) {
-        let p = {
-            id: Math.random(), name: lastNames[Math.floor(Math.random()*lastNames.length)]+" "+firstNames[Math.floor(Math.random()*firstNames.length)],
-            pos: pos, age: isDraft?18:24, status: isDraft?2:1, salary: 1000,
-            games:0, win:0, lose:0, draw:0, era_run:0, era_ip:0, avg_ab:0, avg_h:0, hr:0, rbi:0
+        document.getElementById('displayTeamName').innerText = `⚾ ${teamName}`;
+        document.getElementById('displayCity').innerText = `Home: ${cityName}`;
+        document.getElementById('setupScreen').classList.add('hidden');
+        
+        initRoster();
+        updateUI();
+    }
+
+    // 選手生成
+    function createPlayer(pos) {
+        const lastNames = ["佐藤", "鈴木", "高橋", "田中", "伊藤", "山本", "中村", "小林"];
+        return {
+            id: Math.random(), 
+            name: lastNames[Math.floor(Math.random()*8)] + " 選手",
+            pos: pos, age: 24, status: 1, salary: 1500,
+            v_speed: 140 + Math.floor(Math.random()*15),
+            v_con: 30 + Math.floor(Math.random()*50),
+            b_meet: 30 + Math.floor(Math.random()*50),
+            b_pow: 30 + Math.floor(Math.random()*50),
+            avg_ab: 0, avg_h: 0, hr: 0, era_ip: 0, era_run: 0, win: 0, lose: 0
         };
-        if(pos==='投手') {
-            p.v_speed = Math.floor(Math.random()*25)+135; // 球速
-            p.v_con = Math.floor(Math.random()*60)+20;   // コン
-            p.v_sta = Math.floor(Math.random()*60)+20;   // スタ
-        } else {
-            p.b_dan = Math.floor(Math.random()*4)+1;      // 弾道
-            p.b_meet = Math.floor(Math.random()*60)+20;   // ミート
-            p.b_pow = Math.floor(Math.random()*60)+20;    // パワー
-            p.b_run = Math.floor(Math.random()*60)+20;    // 走力
-            p.b_arm = Math.floor(Math.random()*60)+20;    // 肩力
-            p.b_def = Math.floor(Math.random()*60)+20;    // 守備
-            p.b_cat = Math.floor(Math.random()*60)+20;    // 捕球
-        }
-        return p;
     }
-    for(let i=0; i<60; i++) roster.push(createPlayer(i<25?'投手':'野手', false));
 
-    function startGame() { document.getElementById('startScreen').classList.add('hidden'); addLog("シーズン開幕です！"); }
+    function initRoster() {
+        roster = [];
+        for(let i=0; i<15; i++) roster.push(createPlayer('投手'));
+        for(let i=0; i<15; i++) roster.push(createPlayer('野手'));
+    }
 
     function advanceDays(days) {
         for(let i=0; i<days; i++) {
             date.setDate(date.getDate() + 1);
-            let m = date.getMonth(), d = date.getDate();
-            if (d === 1) budget -= Math.floor(roster.reduce((s,p)=>s+p.salary,0)/12);
-            if (m === 9 && d === 20) { stopAuto(); openDraft(); return; }
-            if (totalGames < MAX_GAMES && m >= 2 && m <= 8) {
-                if (m > 2 || d >= 25) { if (Math.random() < 0.8) simulateGame(); }
+            if (totalGames < 143 && date.getMonth() >= 2 && date.getMonth() <= 8) {
+                if (Math.random() < 0.7) simulateGame();
             }
         }
         updateUI();
@@ -171,75 +191,73 @@
 
     function simulateGame() {
         totalGames++;
-        let roll = Math.random();
-        let res = roll < 0.08 ? "D" : (roll < 0.54 ? "W" : "L");
-        if(res === "W") wins++; else if(res === "L") losses++; else draws++;
+        let res = Math.random() < 0.5 ? "W" : "L";
+        if(res === "W") wins++; else losses++;
         
-        let p = roster.filter(x=>x.pos==='投手' && x.status===1)[Math.floor(Math.random()*10)];
-        if(p) { 
-            p.games++; if(res==="W") p.win++; else if(res==="L") p.lose++; else p.draw++;
-            p.era_ip += (res==="D"?12:9); 
-            p.era_run += Math.max(0, 10 - (p.v_con/10));
-        }
+        let p = roster.filter(x=>x.pos==='投手' && x.status===1)[Math.floor(Math.random()*5)];
+        if(p) { p.era_ip += 9; p.era_run += Math.max(0, 4 - p.v_con/20); if(res==="W") p.win++; else p.lose++; }
+        
         roster.filter(x=>x.pos==='野手' && x.status===1).forEach(b => {
-            b.games++; let ab = (res==="D"?5:4); b.avg_ab += ab;
-            for(let j=0; j<ab; j++) if(Math.random() < (b.b_meet/350)+0.22) b.avg_h++;
-            if(Math.random() < (b.b_pow/450)) { b.hr++; b.rbi += Math.floor(Math.random()*2)+1; }
+            b.avg_ab += 4; if(Math.random() < 0.25) b.avg_h++;
+            if(Math.random() < 0.05) b.hr++;
         });
     }
 
     function updateUI() {
         document.getElementById('date').innerText = `${date.getMonth()+1}月${date.getDate()}日`;
         document.getElementById('budget').innerText = `${(budget/10000).toFixed(2)}億円`;
-        document.getElementById('gameCount').innerText = `${totalGames} / ${MAX_GAMES}`;
-        let wr = (wins+losses===0) ? 0 : wins/(wins+losses);
-        document.getElementById('record').innerText = `${formatStat(wr)} (${wins}-${losses}-${draws})`;
-        renderTable();
+        document.getElementById('gameCount').innerText = `${totalGames} / 143`;
+        let wr = totalGames === 0 ? 0 : wins/(wins+losses);
+        document.getElementById('record').innerText = `.${wr.toFixed(3).split('.')[1]} (${wins}-${losses})`;
+        renderPlayerList();
     }
 
-    function renderTable() {
-        let head = currentTab === 1 ? `<tr><th>名前</th><th>球速</th><th>コン</th><th>スタ</th><th>防御率</th><th>勝-敗</th><th>一軍</th></tr>` :
-                   currentTab === 2 ? `<tr><th>名前</th><th>弾道</th><th>ミ</th><th>パ</th><th>走</th><th>肩</th><th>守</th><th>捕</th><th>打率</th><th>本</th><th>一軍</th></tr>` :
-                                      `<tr><th>名前</th><th>守備</th><th>能力ランク</th><th>年俸</th><th>昇格</th></tr>`;
-        document.getElementById('tableHead').innerHTML = head;
-        let body = "";
+    function renderPlayerList() {
+        const list = document.getElementById('playerList');
+        list.innerHTML = "";
         let filtered = roster.filter(p => (currentTab===1 && p.pos==='投手' && p.status===1) || (currentTab===2 && p.pos==='野手' && p.status===1) || (currentTab===3 && p.status===2));
-        
         filtered.forEach(p => {
-            let row = `<td><b>${p.name}</b></td>`;
-            if(currentTab === 1) {
-                row += `<td>${p.v_speed}km</td><td>${getRankSpan(p.v_con)}</td><td>${getRankSpan(p.v_sta)}</td><td>${(p.era_run*9/(p.era_ip||1)).toFixed(2)}</td><td>${p.win}-${p.lose}</td>`;
-            } else if(currentTab === 2) {
-                row += `<td>${p.b_dan}</td><td>${getRankSpan(p.b_meet)}</td><td>${getRankSpan(p.b_pow)}</td><td>${getRankSpan(p.b_run)}</td><td>${getRankSpan(p.b_arm)}</td><td>${getRankSpan(p.b_def)}</td><td>${getRankSpan(p.b_cat)}</td><td>${formatStat(p.avg_h/(p.avg_ab||1))}</td><td>${p.hr}</td>`;
-            } else {
-                let mainStat = p.pos==='投手' ? p.v_speed+'km' : '弾道'+p.b_dan;
-                row += `<td>${p.pos}</td><td>${mainStat}</td><td>${p.salary}万</td>`;
-            }
-            body += `<tr>${row}<td><button onclick="toggleStatus(${p.id})">入替</button></td></tr>`;
+            let div = document.createElement('div');
+            div.className = "player-card";
+            div.onclick = () => showDetail(p);
+            div.innerHTML = `<span style="font-weight:bold;">${p.name}</span><span style="font-size:0.8em; color:#666;">${p.pos==='投手'?p.v_speed+'km':'打率 .'+(p.avg_h/(p.avg_ab||1)).toFixed(3).split('.')[1]}</span>`;
+            list.appendChild(div);
         });
-        document.getElementById('rosterBody').innerHTML = body;
     }
 
-    function openDraft() {
-        let picks = 3; document.getElementById('draftLeftCount').innerText = picks;
-        const div = document.getElementById('draftCandidates'); div.innerHTML = "";
-        for(let i=0; i<6; i++) {
-            let p = createPlayer(Math.random()>0.5?'投手':'野手', true);
-            let btn = document.createElement('button'); btn.style.padding="10px";
-            btn.innerHTML = `${p.name}<br>${p.pos}<br>${p.pos==='投手'?p.v_speed+'km':'ミ'+getRankChar(p.b_meet)+'パ'+getRankChar(p.b_pow)}`;
-            btn.onclick = () => { roster.push(p); btn.disabled=true; btn.style.opacity=0.3; picks--; document.getElementById('draftLeftCount').innerText=picks; if(picks===0) document.getElementById('draftModal').style.display='none'; };
-            div.appendChild(btn);
-        }
-        document.getElementById('draftModal').style.display = 'block';
+    function showDetail(p) {
+        const getRankChar = (v) => v>=80?'A':v>=70?'B':v>=60?'C':v>=50?'D':'E';
+        let content = `
+            <h3 style="color:var(--primary); margin-bottom:5px;">${p.name}</h3>
+            <div style="font-size:0.9em; margin-bottom:15px;">${p.pos} / ${p.age}歳 / 年俸${p.salary}万</div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:15px;">
+                ${p.pos==='投手' ? `
+                    <div style="background:#eee; padding:5px 10px;">球速: ${p.v_speed}km</div>
+                    <div style="background:#eee; padding:5px 10px;">制球: <span class="rank-${getRankChar(p.v_con)}">${getRankChar(p.v_con)}</span></div>
+                ` : `
+                    <div style="background:#eee; padding:5px 10px;">ミート: <span class="rank-${getRankChar(p.b_meet)}">${getRankChar(p.b_meet)}</span></div>
+                    <div style="background:#eee; padding:5px 10px;">パワー: <span class="rank-${getRankChar(p.b_pow)}">${getRankChar(p.b_pow)}</span></div>
+                `}
+            </div>
+            <div style="font-size:0.85em; background:#f0f2f5; padding:10px; border-radius:5px;">
+                <strong>通算成績:</strong><br>
+                ${p.pos==='投手' ? `${p.win}勝 ${p.lose}敗 防御率 ${(p.era_run*9/(p.era_ip||1)).toFixed(2)}` : `打率 .${(p.avg_h/(p.avg_ab||1)).toFixed(3).split('.')[1]} ${p.hr}本塁打`}
+            </div>
+            <button onclick="toggleStatus(${p.id}); closeDetail();" style="width:100%; margin-top:15px; padding:10px; background:var(--primary); color:white; border:none; border-radius:5px; cursor:pointer;">
+                ${p.status===1?'2軍へ':'1軍へ'}
+            </button>
+        `;
+        document.getElementById('modalContent').innerHTML = content;
+        document.getElementById('detailModal').style.display = 'block';
     }
 
-    function startAuto() { if(!autoTimer) { document.getElementById('btnAuto').style.display='none'; document.getElementById('btnStop').style.display='inline-block'; autoTimer=setInterval(()=>advanceDays(1), 60); } }
+    function closeDetail() { document.getElementById('detailModal').style.display = 'none'; }
+    function startAuto() { if(!autoTimer) { document.getElementById('btnAuto').style.display='none'; document.getElementById('btnStop').style.display='inline-block'; autoTimer=setInterval(()=>advanceDays(1), 500); } }
     function stopAuto() { clearInterval(autoTimer); autoTimer=null; document.getElementById('btnAuto').style.display='inline-block'; document.getElementById('btnStop').style.display='none'; }
-    function toggleStatus(id) { let p=roster.find(x=>x.id===id); p.status=p.status===1?2:1; renderTable(); }
-    function switchTab(t) { currentTab=t; document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active', i+1===t)); renderTable(); }
-    function addLog(msg) { const box = document.getElementById('logBox'); box.innerHTML = `<div>[${date.getMonth()+1}/${date.getDate()}] ${msg}</div>` + box.innerHTML; }
+    function switchTab(t) { currentTab=t; document.querySelectorAll('.tab').forEach((el,i)=>el.style.borderBottom = i+1===t?'3px solid var(--primary)':'none'); renderPlayerList(); }
+    function toggleStatus(id) { let p=roster.find(x=>x.id===id); p.status=p.status===1?2:1; renderPlayerList(); }
 
-    updateUI();
+    window.onclick = (e) => { if(e.target == document.getElementById('detailModal')) closeDetail(); }
 </script>
 </body>
 </html>
